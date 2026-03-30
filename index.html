@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>BeritaKu — Portal Berita</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#f5f0eb;--surface:#ffffff;--ink:#1a1714;--ink2:#4a4540;
+  --muted:#8c857e;--border:#e2dbd3;--red:#c0392b;--red-soft:rgba(192,57,43,.1);
+  --green:#27ae60;--radius:14px;--radius-sm:8px;
+  --sh:0 2px 12px rgba(26,23,20,.07);--sh-lg:0 8px 32px rgba(26,23,20,.13);
+  --header-h:56px;--font:\'Sora\',sans-serif;--font-h:\'Playfair Display\',serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{font-size:16px;scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:100vh;overflow-x:hidden}
+img{display:block;max-width:100%}
+button{cursor:pointer;font-family:var(--font)}
+
+/* LOADING */
+#ls{position:fixed;inset:0;background:var(--ink);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;z-index:9999;transition:opacity .5s .2s,visibility .5s .2s}
+#ls.hide{opacity:0;visibility:hidden;pointer-events:none}
+.ls-logo{font-family:var(--font-h);font-size:44px;font-weight:900;color:#fff;letter-spacing:-1px;margin-bottom:6px}
+.ls-logo em{color:var(--red);font-style:normal}
+.ls-sub{color:rgba(255,255,255,.4);font-size:11px;letter-spacing:2.5px;text-transform:uppercase}
+.ls-bar{width:150px;height:2px;background:rgba(255,255,255,.15);border-radius:1px;margin-top:40px;overflow:hidden}
+.ls-fill{height:100%;background:var(--red);animation:lb 1.6s ease forwards}
+@keyframes lb{to{width:100%}}
+
+/* TOAST */
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(70px);
+  background:var(--ink);color:#fff;padding:10px 20px;border-radius:100px;
+  font-size:13px;font-weight:500;z-index:9990;white-space:nowrap;
+  max-width:90vw;text-align:center;transition:transform .3s cubic-bezier(.34,1.56,.64,1)}
+#toast.show{transform:translateX(-50%) translateY(0)}
+#toast.err{background:var(--red)}
+#toast.ok{background:var(--green)}
+
+/* HEADER */
+#hdr{position:sticky;top:0;z-index:200;height:var(--header-h);background:var(--ink);
+  display:flex;align-items:center;justify-content:space-between;padding:0 16px}
+.h-logo{font-family:var(--font-h);font-size:22px;font-weight:900;color:#fff;letter-spacing:-.5px}
+.h-logo em{color:var(--red);font-style:normal}
+.h-right{display:flex;align-items:center;gap:8px}
+.btn-login{background:var(--red);color:#fff;border:none;border-radius:20px;
+  padding:7px 16px;font-size:12px;font-weight:600}
+.u-av{width:34px;height:34px;border-radius:50%;background:var(--red);color:#fff;
+  border:2px solid rgba(255,255,255,.2);display:flex;align-items:center;
+  justify-content:center;font-size:12px;font-weight:700}
+
+/* SEARCH */
+#srch-wrap{background:var(--ink);padding:0 16px 14px}
+.srch-box{position:relative;display:flex;align-items:center}
+.srch-box svg{position:absolute;left:13px;pointer-events:none;color:rgba(255,255,255,.4)}
+#srch{width:100%;padding:10px 14px 10px 40px;background:rgba(255,255,255,.1);
+  border:1.5px solid rgba(255,255,255,.15);border-radius:24px;color:#fff;
+  font-family:var(--font);font-size:14px;outline:none;transition:border-color .2s}
+#srch::placeholder{color:rgba(255,255,255,.4)}
+#srch:focus{border-color:var(--red)}
+
+/* CATS */
+#cats{background:var(--surface);border-bottom:1px solid var(--border);
+  display:flex;gap:6px;padding:0 16px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+#cats::-webkit-scrollbar{display:none}
+.cat{flex-shrink:0;padding:8px 14px;border-radius:100px;border:1.5px solid var(--border);
+  background:transparent;color:var(--muted);font-size:11px;font-weight:600;
+  letter-spacing:.3px;white-space:nowrap;margin:8px 0;transition:all .18s}
+.cat.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+/* MAIN */
+#main{padding:16px;max-width:500px;margin:0 auto}
+
+/* HERO */
+.hero{border-radius:var(--radius);overflow:hidden;margin-bottom:16px;cursor:pointer;
+  position:relative;background:var(--ink);box-shadow:var(--sh-lg);animation:fu .4s ease both}
+.hero-img{width:100%;aspect-ratio:16/9;object-fit:cover;opacity:.75}
+.hero-ph{width:100%;aspect-ratio:16/9;background:linear-gradient(135deg,#1a1714,#3d2b1f);
+  display:flex;align-items:center;justify-content:center;font-size:56px}
+.hero-body{position:absolute;bottom:0;left:0;right:0;padding:20px 14px 14px;
+  background:linear-gradient(to top,rgba(26,23,20,.95),transparent)}
+.h-badge{display:inline-block;background:var(--red);color:#fff;font-size:9px;font-weight:700;
+  padding:3px 9px;border-radius:100px;margin-bottom:8px;text-transform:uppercase;letter-spacing:.8px}
+.hero-body h2{font-family:var(--font-h);font-size:19px;font-weight:700;color:#fff;line-height:1.3;margin-bottom:8px}
+.hero-body .mr{display:flex;gap:8px;align-items:center;font-size:11px;color:rgba(255,255,255,.6);flex-wrap:wrap}
+
+/* GRID */
+.ngrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.gc{background:var(--surface);border-radius:var(--radius);overflow:hidden;cursor:pointer;
+  box-shadow:var(--sh);transition:transform .2s;animation:fu .35s ease both;
+  display:flex;flex-direction:column}
+.gc:active{transform:scale(.97)}
+.gc-iw{position:relative;aspect-ratio:4/3;overflow:hidden;background:var(--bg)}
+.gc-img{width:100%;height:100%;object-fit:cover}
+.gc-ph{width:100%;height:100%;background:linear-gradient(135deg,var(--bg),var(--border));
+  display:flex;align-items:center;justify-content:center;font-size:32px}
+.gc-bdg{position:absolute;top:7px;left:7px;background:var(--ink);color:#fff;opacity:.85;
+  font-size:8px;font-weight:700;padding:2px 7px;border-radius:100px;letter-spacing:.5px;text-transform:uppercase}
+.gc-body{padding:10px;flex:1;display:flex;flex-direction:column;gap:6px}
+.gc-title{font-family:var(--font-h);font-size:13px;font-weight:700;line-height:1.35;color:var(--ink);
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;flex:1}
+.gc-meta{font-size:10px;color:var(--muted);display:flex;flex-direction:column;gap:2px}
+
+/* SECTION LABEL */
+.sl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);
+  display:flex;align-items:center;gap:8px;margin:4px 0 12px}
+.sl::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* SKELETON */
+.sk-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.sk-card{background:var(--surface);border-radius:var(--radius);overflow:hidden;box-shadow:var(--sh)}
+.sk-img{aspect-ratio:4/3}
+.sk-body{padding:10px;display:flex;flex-direction:column;gap:6px}
+.sk{background:linear-gradient(90deg,var(--bg) 25%,var(--border) 50%,var(--bg) 75%);
+  background-size:200% 100%;animation:shim 1.4s infinite;border-radius:4px}
+@keyframes shim{to{background-position:-200% 0}}
+
+/* EMPTY */
+.empty{text-align:center;padding:60px 20px;color:var(--muted)}
+.empty .ei{font-size:44px;margin-bottom:14px}
+.empty h3{font-size:17px;font-weight:600;color:var(--ink);margin-bottom:6px}
+.empty p{font-size:13px;line-height:1.6}
+
+/* LOAD MORE */
+#lm{display:block;width:100%;padding:12px;background:var(--surface);
+  border:1.5px solid var(--border);border-radius:var(--radius);
+  font-size:13px;font-weight:600;color:var(--muted);margin-bottom:24px;transition:all .2s}
+#lm:hover{border-color:var(--red);color:var(--red)}
+
+/* FAB */
+#fab{position:fixed;bottom:24px;right:18px;z-index:150;width:54px;height:54px;
+  border-radius:50%;background:var(--red);color:#fff;border:none;font-size:22px;
+  box-shadow:0 4px 18px rgba(192,57,43,.45);display:none;align-items:center;
+  justify-content:center;transition:transform .18s}
+#fab.on{display:flex}
+#fab:active{transform:scale(.9)}
+
+/* SCROLL TOP */
+#stb{position:fixed;bottom:88px;right:18px;z-index:149;width:38px;height:38px;
+  border-radius:50%;background:var(--surface);border:1.5px solid var(--border);
+  color:var(--ink);font-size:16px;box-shadow:var(--sh);display:none;align-items:center;justify-content:center}
+#stb.on{display:flex}
+
+/* USER MENU */
+#umenu{position:fixed;top:calc(var(--header-h) + 6px);right:14px;z-index:300;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  box-shadow:var(--sh-lg);min-width:196px;overflow:hidden;display:none}
+#umenu.on{display:block}
+.um-hd{padding:13px 15px;background:var(--bg);border-bottom:1px solid var(--border)}
+.um-name{font-weight:700;font-size:14px}
+.um-role{font-size:11px;color:var(--muted);margin-top:2px}
+.um-item{display:flex;align-items:center;gap:9px;padding:11px 15px;font-size:13px;
+  border:none;background:transparent;width:100%;text-align:left;color:var(--ink);transition:background .15s}
+.um-item:hover{background:var(--bg)}
+.um-item.red{color:var(--red)}
+
+/* MODALS */
+.ov{position:fixed;inset:0;background:rgba(26,23,20,.55);z-index:400;
+  display:none;align-items:flex-end;backdrop-filter:blur(3px)}
+.ov.on{display:flex}
+.sh{background:var(--surface);width:100%;max-width:500px;margin:0 auto;
+  border-radius:20px 20px 0 0;max-height:94vh;overflow-y:auto;
+  transform:translateY(100%);transition:transform .34s cubic-bezier(.34,1.56,.64,1)}
+.ov.on .sh{transform:translateY(0)}
+.sh-hdl{width:34px;height:4px;background:var(--border);border-radius:2px;margin:11px auto 0}
+.sh-hd{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;
+  justify-content:space-between;position:sticky;top:0;background:var(--surface);z-index:1}
+.sh-ttl{font-family:var(--font-h);font-size:20px;font-weight:700}
+.sh-cls{width:30px;height:30px;border:none;background:var(--bg);border-radius:50%;
+  font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--ink)}
+.sh-bd{padding:18px}
+
+/* FORM */
+.fg{margin-bottom:16px}
+.fl{display:block;font-size:11px;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.fi,.fta,.fsel{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:10px;
+  font-family:var(--font);font-size:14px;color:var(--ink);background:var(--surface);
+  outline:none;transition:border-color .2s;-webkit-appearance:none}
+.fi:focus,.fta:focus,.fsel:focus{border-color:var(--red)}
+.fta{resize:none;line-height:1.65;min-height:110px}
+.fhint{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.4}
+.btn-p{width:100%;padding:13px;background:var(--red);color:#fff;border:none;
+  border-radius:11px;font-family:var(--font);font-size:15px;font-weight:600;
+  transition:opacity .2s;margin-top:2px}
+.btn-p:hover{opacity:.88}
+.btn-p:disabled{opacity:.45}
+.btn-s{width:100%;padding:12px;background:var(--bg);color:var(--ink);
+  border:1.5px solid var(--border);border-radius:11px;font-family:var(--font);
+  font-size:14px;font-weight:600;margin-top:9px}
+
+/* AUTH TABS */
+.atabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:18px}
+.atab{flex:1;padding:11px;text-align:center;font-size:13px;font-weight:600;
+  border:none;background:transparent;color:var(--muted);border-bottom:2px solid transparent;
+  margin-bottom:-1px;transition:all .2s}
+.atab.on{color:var(--red);border-color:var(--red)}
+
+/* ARTICLE */
+.art-img{width:100%;aspect-ratio:16/9;object-fit:cover}
+.art-ph{width:100%;aspect-ratio:16/9;background:linear-gradient(135deg,var(--bg),var(--border));
+  display:flex;align-items:center;justify-content:center;font-size:60px}
+.art-bd{padding:18px}
+.art-cat{display:inline-block;color:var(--red);font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.6px;background:var(--red-soft);
+  padding:3px 9px;border-radius:100px;margin-bottom:9px}
+.art-ttl{font-family:var(--font-h);font-size:23px;font-weight:900;line-height:1.28;margin-bottom:13px}
+.art-meta{display:flex;align-items:center;gap:10px;padding:11px 0;
+  border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:18px}
+.a-av{width:34px;height:34px;border-radius:50%;background:var(--ink);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+.a-info .an{font-size:13px;font-weight:600}
+.a-info .ad{font-size:11px;color:var(--muted)}
+.art-txt{font-size:15px;line-height:1.85;color:var(--ink2);font-weight:300}
+.art-txt a{color:var(--red);text-decoration:underline;text-underline-offset:2px}
+
+/* COMMENTS */
+.cm-sec{border-top:1px solid var(--border);padding-top:18px;margin-top:6px}
+.cm-ttl{font-family:var(--font-h);font-size:17px;font-weight:700;
+  margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.cm-cnt{background:var(--red-soft);color:var(--red);font-size:11px;font-weight:700;
+  padding:2px 8px;border-radius:100px;font-family:var(--font)}
+.cm-form{background:var(--bg);border-radius:var(--radius-sm);padding:12px;margin-bottom:16px;
+  display:flex;flex-direction:column;gap:8px}
+.cm-form .fi,.cm-form .fta{background:var(--surface);font-size:13px}
+.cm-form .fta{min-height:70px}
+.btn-cm{padding:9px 20px;background:var(--ink);color:#fff;border:none;border-radius:8px;
+  font-family:var(--font);font-size:13px;font-weight:600;align-self:flex-start;transition:opacity .2s}
+.btn-cm:disabled{opacity:.4}
+.ci{padding:12px 0;border-bottom:1px solid var(--border)}
+.ci:last-child{border-bottom:none}
+.ci-hd{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.ci-av{width:28px;height:28px;border-radius:50%;background:var(--ink2);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.ci-name{font-size:13px;font-weight:600}
+.ci-dt{font-size:10px;color:var(--muted);margin-left:auto}
+.ci-txt{font-size:13px;line-height:1.6;color:var(--ink2)}
+.no-cm{text-align:center;padding:24px;color:var(--muted);font-size:13px}
+
+/* MANAGE */
+.mi{display:flex;gap:8px;align-items:flex-start;padding:11px 0;border-bottom:1px solid var(--border)}
+.mi:last-child{border-bottom:none}
+.mi-bd{flex:1;min-width:0}
+.mi-ttl{font-weight:600;font-size:13px;margin-bottom:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.mi-mt{font-size:10px;color:var(--muted)}
+.mi-ac{display:flex;gap:5px;flex-shrink:0}
+.bsm{padding:5px 11px;border-radius:7px;font-size:11px;font-weight:600;border:none}
+.b-e{background:var(--bg);color:var(--ink)}
+.b-d{background:var(--red-soft);color:var(--red)}
+
+@keyframes fu{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="ls">
+  <div class="ls-logo">Berita<em>Ku</em></div>
+  <div class="ls-sub">Portal Berita Indonesia</div>
+  <div class="ls-bar"><div class="ls-fill"></div></div>
+</div>
+<div id="toast"></div>
+
+<!-- HEADER -->
+<header id="hdr">
+  <div class="h-logo">Berita<em>Ku</em></div>
+  <div class="h-right" id="h-right">
+    <button class="btn-login" onclick="openModal('auth-modal')">Masuk</button>
+  </div>
+</header>
+
+<!-- SEARCH -->
+<div id="srch-wrap">
+  <div class="srch-box">
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+    </svg>
+    <input type="text" id="srch" placeholder="Cari judul, penulis, atau topik..." autocomplete="off">
+  </div>
+</div>
+
+<!-- CATEGORIES -->
+<div id="cats"></div>
+
+<!-- MAIN -->
+<main id="main">
+  <div id="news-list"></div>
+  <button id="lm" style="display:none" onclick="loadMore()">Muat lebih banyak →</button>
+</main>
+
+<button id="fab" onclick="openWriteModal()">✏️</button>
+<button id="stb" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+<!-- USER MENU -->
+<div id="umenu">
+  <div class="um-hd">
+    <div class="um-name" id="um-n">—</div>
+    <div class="um-role" id="um-r">—</div>
+  </div>
+  <button class="um-item" onclick="openManage()">📋 Kelola Berita Saya</button>
+  <button class="um-item red" onclick="doLogout()">🚪 Keluar</button>
+</div>
+
+<!-- AUTH MODAL -->
+<div class="ov" id="auth-modal">
+  <div class="sh">
+    <div class="sh-hdl"></div>
+    <div class="sh-hd">
+      <span class="sh-ttl">Akun</span>
+      <button class="sh-cls" onclick="closeModal('auth-modal')">✕</button>
+    </div>
+    <div class="sh-bd">
+      <div class="atabs">
+        <button class="atab on" onclick="atab('login')">Masuk</button>
+        <button class="atab" onclick="atab('register')">Daftar</button>
+      </div>
+      <div id="tl">
+        <div class="fg"><label class="fl">Username</label>
+          <input class="fi" id="au" placeholder="Username" autocomplete="username"></div>
+        <div class="fg"><label class="fl">Password</label>
+          <input class="fi" type="password" id="ap" placeholder="Password" autocomplete="current-password"></div>
+        <button class="btn-p" id="btn-lg" onclick="doLogin()">Masuk</button>
+        <p style="text-align:center;font-size:11px;color:var(--muted);margin-top:14px">
+          Akun hanya bisa dibuat oleh admin melalui spreadsheet.</p>
+      </div>
+      <div id="tr" style="display:none">
+        <div class="empty"><div class="ei">🔒</div>
+          <h3>Pendaftaran Terbatas</h3>
+          <p>Akun baru hanya dapat dibuat oleh admin melalui Google Spreadsheet. Hubungi admin untuk mendapatkan akses.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- WRITE MODAL -->
+<div class="ov" id="write-modal">
+  <div class="sh">
+    <div class="sh-hdl"></div>
+    <div class="sh-hd">
+      <span class="sh-ttl" id="wt">Tulis Berita</span>
+      <button class="sh-cls" onclick="closeModal('write-modal')">✕</button>
+    </div>
+    <div class="sh-bd">
+      <input type="hidden" id="eid">
+      <div class="fg"><label class="fl">Judul Berita *</label>
+        <input class="fi" id="fj" placeholder="Tulis judul yang menarik..."></div>
+      <div class="fg"><label class="fl">Kategori</label>
+        <select class="fsel" id="fk">
+          <option value="">— Pilih Kategori —</option>
+          <option>Nasional</option><option>Internasional</option><option>Ekonomi</option>
+          <option>Teknologi</option><option>Olahraga</option><option>Hiburan</option>
+          <option>Kesehatan</option><option>Pendidikan</option><option>Lainnya</option>
+        </select></div>
+      <div class="fg"><label class="fl">Tanggal Terbit *</label>
+        <input class="fi" type="date" id="ftgl"></div>
+      <div class="fg"><label class="fl">URL Gambar (opsional)</label>
+        <input class="fi" type="url" id="fimg" placeholder="https://...">
+        <p class="fhint">💡 Upload ke Google Drive/Imgur lalu tempel URL-nya di sini.</p></div>
+      <div class="fg"><label class="fl">Isi Berita *</label>
+        <textarea class="fta" id="fdesc" rows="7" placeholder="Tulis isi berita...&#10;&#10;Sisipkan link: [teks](https://url.com)"></textarea>
+        <p class="fhint">Untuk link: [teks tampil](https://alamat-url.com)</p></div>
+      <button class="btn-p" id="btn-sub" onclick="submitNews()">📤 Publikasikan</button>
+      <button class="btn-s" onclick="closeModal('write-modal')">Batal</button>
+    </div>
+  </div>
+</div>
+
+<!-- ARTICLE MODAL -->
+<div class="ov" id="art-modal">
+  <div class="sh">
+    <div class="sh-hdl"></div>
+    <div class="sh-hd">
+      <span class="sh-ttl" style="font-size:15px;font-weight:600">Baca Berita</span>
+      <button class="sh-cls" onclick="closeModal('art-modal')">✕</button>
+    </div>
+    <div id="art-area"></div>
+  </div>
+</div>
+
+<!-- MANAGE MODAL -->
+<div class="ov" id="manage-modal">
+  <div class="sh">
+    <div class="sh-hdl"></div>
+    <div class="sh-hd">
+      <span class="sh-ttl">Kelola Berita</span>
+      <button class="sh-cls" onclick="closeModal('manage-modal')">✕</button>
+    </div>
+    <div class="sh-bd" id="manage-list"></div>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="ov" id="confirm-modal">
+  <div class="sh">
+    <div class="sh-hdl"></div>
+    <div class="sh-bd" style="padding:28px 20px;text-align:center">
+      <div style="font-size:42px;margin-bottom:12px">🗑️</div>
+      <h3 style="font-size:18px;font-weight:700;margin-bottom:8px">Hapus Berita?</h3>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:22px">Berita yang dihapus tidak dapat dikembalikan.</p>
+      <button class="btn-p" id="btn-cdel">Ya, Hapus</button>
+      <button class="btn-s" onclick="closeModal('confirm-modal')">Batal</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════
+   CONFIG
+══════════════════════════════ */
+const CFG = {
+  API: 'https://script.google.com/macros/s/AKfycbyATPBQPdl200vCnlfN66LbljAWfSi0Wq2m7X_bRvN0TnVf6FIV3ZCN47FVkuugoqCK/exec',  // ← Ganti setelah deploy Apps Script
+  PAGE: 10,
+};
+
+/* ══════════════════════════════
+   STATE
+══════════════════════════════ */
+const S = { user:null, all:[], filtered:[], cat:'Semua', q:'', page:1 };
+
+/* ══════════════════════════════
+   UTILS
+══════════════════════════════ */
+const $  = id => document.getElementById(id);
+const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+function toast(msg, type='') {
+  const el = $('toast');
+  el.textContent = msg; el.className = type ? `show ${type}` : 'show';
+  clearTimeout(el._t); el._t = setTimeout(()=>el.className='', 3200);
+}
+
+function fmtD(d) {
+  if (!d) return '';
+  try { return new Date(d).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}); }
+  catch { return d; }
+}
+function fmtDFull(d) {
+  if (!d) return '';
+  try { return new Date(d).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'}); }
+  catch { return d; }
+}
+function fmtTs(ts) {
+  if (!ts) return '';
+  try {
+    const d = new Date(Number(ts));
+    return d.toLocaleDateString('id-ID',{day:'numeric',month:'short'}) + ' ' +
+           d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+  } catch { return ''; }
+}
+function initials(n) { return (n||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2); }
+function catEmoji(c) {
+  return ({Nasional:'🇮🇩',Internasional:'🌏',Ekonomi:'💰',Teknologi:'💻',
+    Olahraga:'⚽',Hiburan:'🎬',Kesehatan:'🏥',Pendidikan:'📚',Lainnya:'📰'})[c]||'📰';
+}
+function parseLinks(text) {
+  if (!text) return '';
+  let h = esc(text);
+  h = h.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>');
+  return h.replace(/\n/g,'<br>');
+}
+
+/* ══════════════════════════════
+   API
+══════════════════════════════ */
+async function api(action, payload={}) {
+  if (!CFG.API || CFG.API==='YOUR_APPS_SCRIPT_URL_HERE') return demo(action, payload);
+  try {
+    const r = await fetch(CFG.API,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action,...payload})});
+    return await r.json();
+  } catch { return {ok:false,error:'Gagal terhubung ke server.'}; }
+}
+
+/* ══════════════════════════════
+   DEMO DATA
+══════════════════════════════ */
+const DU=[
+  {id:'u1',username:'admin',password:'admin123',nama:'Administrator',role:'admin'},
+  {id:'u2',username:'editor',password:'editor123',nama:'Editor Utama',role:'editor'},
+];
+let DN=[
+  {id:'n1',judul:'Indonesia Masuki Era Kendaraan Listrik: Target 2 Juta Unit Motor di 2025',penulis:'Administrator',penulisId:'u1',kategori:'Nasional',tanggal:'2025-06-15',gambar:'',deskripsi:'Pemerintah Indonesia resmi meluncurkan kebijakan akselerasi kendaraan listrik yang menargetkan 2 juta unit motor listrik dan 400.000 unit mobil listrik beredar di jalan pada akhir 2025.\n\nKebijakan ini didukung dengan insentif pajak dan subsidi bagi produsen lokal. Lihat detail di [situs resmi Kemenhub](https://kemenhub.go.id).',timestamp:Date.now()-864e5},
+  {id:'n2',judul:'Startup Fintech Indonesia Raih Pendanaan Rp 500 Miliar dari Investor Asia',penulis:'Editor Utama',penulisId:'u2',kategori:'Teknologi',tanggal:'2025-06-14',gambar:'',deskripsi:'Sebuah startup fintech Indonesia berhasil meraih pendanaan Seri B senilai Rp 500 miliar dari konsorsium investor Asia Tenggara.\n\nDana akan digunakan untuk ekspansi ke Vietnam dan Thailand pada kuartal ketiga 2025.',timestamp:Date.now()-1728e5},
+  {id:'n3',judul:'Timnas Lolos Final Piala AFF 2025 Setelah Kalahkan Thailand 2-1 di GBK',penulis:'Administrator',penulisId:'u1',kategori:'Olahraga',tanggal:'2025-06-13',gambar:'',deskripsi:'Timnas Indonesia mengalahkan Thailand 2-1 di semifinal Piala AFF 2025 yang berlangsung di Stadion Gelora Bung Karno, Jakarta.\n\nDua gol kemenangan dicetak oleh Hokky Caraka di menit ke-34 dan Rafael Struick menit ke-78.',timestamp:Date.now()-2592e5},
+  {id:'n4',judul:'Rupiah Menguat ke Rp 15.200 per Dolar Didukung Data Inflasi',penulis:'Editor Utama',penulisId:'u2',kategori:'Ekonomi',tanggal:'2025-06-12',gambar:'',deskripsi:'Nilai tukar rupiah menguat ke Rp 15.200 per dolar AS pada perdagangan Kamis pagi, didorong data inflasi yang lebih rendah dari ekspektasi pasar.',timestamp:Date.now()-3456e5},
+  {id:'n5',judul:'LPDP 2025 Buka Pendaftaran: 4.000 Kuota Beasiswa S2 dan S3',penulis:'Administrator',penulisId:'u1',kategori:'Pendidikan',tanggal:'2025-06-11',gambar:'',deskripsi:'LPDP membuka pendaftaran beasiswa 2025 dengan total kuota 4.000 penerima untuk jenjang S2 dan S3 di dalam dan luar negeri.\n\nDaftar di [web resmi LPDP](https://beasiswalpdp.kemenkeu.go.id).',timestamp:Date.now()-4320e5},
+  {id:'n6',judul:'AI Semakin Masuk ke Sistem Pendidikan Nasional Indonesia',penulis:'Editor Utama',penulisId:'u2',kategori:'Teknologi',tanggal:'2025-06-10',gambar:'',deskripsi:'Kemendikbud meluncurkan pilot program integrasi AI ke kurikulum SMA negeri di 10 kota besar Indonesia. Program ini menargetkan 50.000 siswa di tahun pertama.',timestamp:Date.now()-5184e5},
+];
+let DC=[
+  {id:'c1',newsId:'n1',nama:'Budi Santoso',komentar:'Semoga kebijakan ini benar-benar diimplementasikan dengan baik!',timestamp:Date.now()-43200000},
+  {id:'c2',newsId:'n1',nama:'Sari Dewi',komentar:'Infrastruktur pengisian daya masih perlu diperbanyak dulu.',timestamp:Date.now()-21600000},
+  {id:'c3',newsId:'n3',nama:'Fajar Pratama',komentar:'Alhamdulillah! Semangat Garuda! 🦅',timestamp:Date.now()-7200000},
+];
+
+function demo(action, p) {
+  switch(action) {
+    case 'login': {
+      const u=DU.find(x=>x.username===p.username&&x.password===p.password);
+      return u?{ok:true,user:{...u,password:undefined}}:{ok:false,error:'Username atau password salah.'};
+    }
+    case 'getNews': return {ok:true,news:[...DN].sort((a,b)=>b.timestamp-a.timestamp)};
+    case 'addNews': { const n={...p.news,id:'n'+Date.now(),timestamp:Date.now()}; DN.unshift(n); return {ok:true,id:n.id}; }
+    case 'editNews': { const i=DN.findIndex(x=>x.id===p.id); if(i>-1){DN[i]={...DN[i],...p.news};return{ok:true};} return{ok:false,error:'Tidak ditemukan.'}; }
+    case 'deleteNews': { DN=DN.filter(x=>x.id!==p.id); return{ok:true}; }
+    case 'getComments': return{ok:true,comments:DC.filter(c=>c.newsId===p.newsId).sort((a,b)=>a.timestamp-b.timestamp)};
+    case 'addComment': { const c={...p.comment,id:'c'+Date.now(),timestamp:Date.now()}; DC.push(c); return{ok:true}; }
+    default: return{ok:false,error:'Unknown action'};
+  }
+}
+
+/* ══════════════════════════════
+   AUTH
+══════════════════════════════ */
+function atab(t) {
+  document.querySelectorAll('.atab').forEach((x,i)=>x.classList.toggle('on',(i===0&&t==='login')||(i===1&&t==='register')));
+  $('tl').style.display=t==='login'?'':'none';
+  $('tr').style.display=t==='register'?'':'none';
+}
+
+async function doLogin() {
+  const u=$('au').value.trim(), p=$('ap').value;
+  if(!u||!p){toast('Isi username dan password','err');return;}
+  const btn=$('btn-lg'); btn.disabled=true; btn.textContent='Memproses...';
+  const r=await api('login',{username:u,password:p});
+  btn.disabled=false; btn.textContent='Masuk';
+  if(r.ok){
+    S.user=r.user; saveSession(r.user); updateUserUI();
+    closeModal('auth-modal'); toast(`Selamat datang, ${r.user.nama}! 👋`,'ok');
+    $('au').value=''; $('ap').value='';
+  } else { toast(r.error||'Login gagal.','err'); }
+}
+
+function doLogout() { S.user=null; localStorage.removeItem('bk_s'); updateUserUI(); closeMenu(); toast('Berhasil keluar.'); }
+function saveSession(u) { localStorage.setItem('bk_s',JSON.stringify(u)); }
+function loadSession() { try{return JSON.parse(localStorage.getItem('bk_s'));}catch{return null;} }
+
+function updateUserUI() {
+  const r=$('h-right');
+  if(S.user) {
+    r.innerHTML=`<div class="u-av" onclick="toggleMenu()">${initials(S.user.nama)}</div>`;
+    $('um-n').textContent=S.user.nama;
+    $('um-r').textContent=S.user.role==='admin'?'Administrator':'Editor';
+    $('fab').classList.add('on');
+  } else {
+    r.innerHTML=`<button class="btn-login" onclick="openModal('auth-modal')">Masuk</button>`;
+    $('fab').classList.remove('on');
+  }
+}
+
+function toggleMenu(){$('umenu').classList.toggle('on');}
+function closeMenu(){$('umenu').classList.remove('on');}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('#umenu')&&!e.target.closest('.u-av'))closeMenu();
+});
+
+/* ══════════════════════════════
+   CATEGORIES
+══════════════════════════════ */
+function buildCats(news) {
+  const cats=['Semua',...new Set(news.map(n=>n.kategori).filter(Boolean))];
+  $('cats').innerHTML=cats.map(c=>`<button class="cat${c===S.cat?' on':''}" onclick="setCat('${c}')">${c}</button>`).join('');
+}
+function setCat(c){S.cat=c;S.page=1;applyFilters();buildCats(S.all);}
+
+/* ══════════════════════════════
+   NEWS LOAD & RENDER
+══════════════════════════════ */
+async function loadNews() {
+  showSkel();
+  const r=await api('getNews');
+  if(r.ok){S.all=r.news||[];buildCats(S.all);applyFilters();}
+  else $('news-list').innerHTML=`<div class="empty"><div class="ei">⚠️</div><h3>Gagal memuat</h3><p>${r.error||''}</p></div>`;
+}
+
+function applyFilters() {
+  let list=[...S.all];
+  if(S.cat!=='Semua') list=list.filter(n=>n.kategori===S.cat);
+  if(S.q) list=list.filter(n=>(n.judul+n.deskripsi+n.penulis).toLowerCase().includes(S.q));
+  S.filtered=list; S.page=1; render();
+}
+
+function render() {
+  const nl=$('news-list');
+  const items=S.filtered.slice(0,S.page*CFG.PAGE);
+  if(!S.filtered.length){
+    nl.innerHTML=`<div class="empty"><div class="ei">📭</div><h3>Tidak ada berita</h3>
+      <p>${S.q?'Tidak ada hasil untuk pencarian ini.':'Berita akan muncul di sini.'}</p></div>`;
+    $('lm').style.display='none'; return;
+  }
+  let html='';
+  const hero=items[0];
+  // Hero card (berita terbaru)
+  html+=`<div class="hero" onclick="openArticle('${hero.id}')">
+    ${hero.gambar
+      ?`<img class="hero-img" src="${esc(hero.gambar)}" alt="${esc(hero.judul)}" loading="lazy" onerror="this.style.display='none'">`
+      :`<div class="hero-ph">${catEmoji(hero.kategori)}</div>`}
+    <div class="hero-body">
+      ${hero.kategori?`<span class="h-badge">${esc(hero.kategori)}</span>`:''}
+      <h2>${esc(hero.judul)}</h2>
+      <div class="mr"><span>✍️ ${esc(hero.penulis||'Anonim')}</span><span>·</span><span>📅 ${fmtD(hero.tanggal)}</span></div>
+    </div>
+  </div>`;
+  // Grid 2 kolom
+  const rest=items.slice(1);
+  if(rest.length){
+    html+=`<div class="sl">Berita Terkini</div><div class="ngrid">`;
+    rest.forEach((n,i)=>{
+      html+=`<div class="gc" onclick="openArticle('${n.id}')" style="animation-delay:${(i*.05).toFixed(2)}s">
+        <div class="gc-iw">
+          ${n.gambar
+            ?`<img class="gc-img" src="${esc(n.gambar)}" alt="${esc(n.judul)}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=gc-ph>${catEmoji(n.kategori)}</div>'">`
+            :`<div class="gc-ph">${catEmoji(n.kategori)}</div>`}
+          ${n.kategori?`<span class="gc-bdg">${esc(n.kategori)}</span>`:''}
+        </div>
+        <div class="gc-body">
+          <div class="gc-title">${esc(n.judul)}</div>
+          <div class="gc-meta"><span>✍️ ${esc(n.penulis||'Anonim')}</span><span>📅 ${fmtD(n.tanggal)}</span></div>
+        </div>
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+  nl.innerHTML=html;
+  $('lm').style.display=items.length<S.filtered.length?'':'none';
+}
+
+function loadMore(){S.page++;render();$('lm').scrollIntoView({behavior:'smooth'});}
+
+function showSkel(){
+  $('news-list').innerHTML=`
+    <div style="border-radius:var(--radius);overflow:hidden;margin-bottom:16px;box-shadow:var(--sh-lg)">
+      <div class="sk" style="aspect-ratio:16/9;width:100%"></div>
+      <div style="padding:14px;background:var(--surface)">
+        <div class="sk" style="height:10px;width:60px;margin-bottom:10px"></div>
+        <div class="sk" style="height:18px;margin-bottom:6px"></div>
+        <div class="sk" style="height:18px;width:75%"></div>
+      </div>
+    </div>
+    <div class="sl">Berita Terkini</div>
+    <div class="sk-grid">
+      ${Array(4).fill(0).map(()=>`<div class="sk-card">
+        <div class="sk-img sk"></div>
+        <div class="sk-body">
+          <div class="sk" style="height:12px;margin-bottom:5px"></div>
+          <div class="sk" style="height:12px;width:70%;margin-bottom:5px"></div>
+          <div class="sk" style="height:10px;width:50%"></div>
+        </div>
+      </div>`).join('')}
+    </div>`;
+}
+
+/* ══════════════════════════════
+   ARTICLE + COMMENTS
+══════════════════════════════ */
+async function openArticle(id) {
+  const n=S.all.find(x=>x.id===id);
+  if(!n)return;
+  $('art-area').innerHTML=`
+    ${n.gambar
+      ?`<img class="art-img" src="${esc(n.gambar)}" alt="${esc(n.judul)}" loading="lazy" onerror="this.style.display='none'">`
+      :`<div class="art-ph">${catEmoji(n.kategori)}</div>`}
+    <div class="art-bd">
+      ${n.kategori?`<span class="art-cat">${esc(n.kategori)}</span>`:''}
+      <h1 class="art-ttl">${esc(n.judul)}</h1>
+      <div class="art-meta">
+        <div class="a-av">${initials(n.penulis)}</div>
+        <div class="a-info">
+          <div class="an">${esc(n.penulis||'Anonim')}</div>
+          <div class="ad">${fmtDFull(n.tanggal)}</div>
+        </div>
+      </div>
+      <div class="art-txt">${parseLinks(n.deskripsi)}</div>
+      <!-- COMMENTS SECTION -->
+      <div class="cm-sec">
+        <div class="cm-ttl">💬 Komentar <span class="cm-cnt" id="cmc-${id}">…</span></div>
+        <div class="cm-form">
+          <input class="fi" id="cm-n" placeholder="Nama Anda">
+          <textarea class="fta" id="cm-t" placeholder="Tulis komentar..." rows="3"></textarea>
+          <button class="btn-cm" id="btn-cm" onclick="postComment('${id}')">Kirim Komentar</button>
+        </div>
+        <div id="cml-${id}"><div class="no-cm">Memuat komentar...</div></div>
+      </div>
+    </div>`;
+  openModal('art-modal');
+  loadComments(id);
+}
+
+async function loadComments(newsId) {
+  const r=await api('getComments',{newsId});
+  const el=$(`cml-${newsId}`), cnt=$(`cmc-${newsId}`);
+  if(!r.ok||!el)return;
+  const cms=r.comments||[];
+  if(cnt)cnt.textContent=cms.length;
+  el.innerHTML=cms.length===0
+    ?`<div class="no-cm">Belum ada komentar. Jadilah yang pertama! 💬</div>`
+    :cms.map(c=>`<div class="ci">
+        <div class="ci-hd">
+          <div class="ci-av">${initials(c.nama)}</div>
+          <span class="ci-name">${esc(c.nama)}</span>
+          <span class="ci-dt">${fmtTs(c.timestamp)}</span>
+        </div>
+        <div class="ci-txt">${esc(c.komentar)}</div>
+      </div>`).join('');
+}
+
+async function postComment(newsId) {
+  const nama=$('cm-n').value.trim(), komentar=$('cm-t').value.trim();
+  if(!nama){toast('Masukkan nama Anda','err');return;}
+  if(!komentar){toast('Tulis komentar terlebih dahulu','err');return;}
+  const btn=$('btn-cm'); btn.disabled=true; btn.textContent='Mengirim...';
+  const r=await api('addComment',{comment:{newsId,nama,komentar}});
+  btn.disabled=false; btn.textContent='Kirim Komentar';
+  if(r.ok){ $('cm-t').value=''; toast('Komentar terkirim! 🎉','ok'); loadComments(newsId); }
+  else toast(r.error||'Gagal mengirim.','err');
+}
+
+/* ══════════════════════════════
+   WRITE / EDIT NEWS
+══════════════════════════════ */
+function openWriteModal(eid=null) {
+  if(!S.user){toast('Silakan masuk terlebih dahulu.','err');openModal('auth-modal');return;}
+  closeMenu();
+  $('eid').value=eid||'';
+  $('wt').textContent=eid?'Edit Berita':'Tulis Berita';
+  $('btn-sub').textContent=eid?'💾 Simpan':'📤 Publikasikan';
+  if(eid){
+    const n=S.all.find(x=>x.id===eid);
+    if(n){$('fj').value=n.judul||'';$('fk').value=n.kategori||'';
+      $('ftgl').value=n.tanggal||'';$('fimg').value=n.gambar||'';$('fdesc').value=n.deskripsi||'';}
+  } else {
+    ['fj','fimg','fdesc'].forEach(i=>$(i).value='');
+    $('fk').value=''; $('ftgl').value=new Date().toISOString().slice(0,10);
+  }
+  openModal('write-modal');
+}
+
+async function submitNews() {
+  if(!S.user)return;
+  const judul=$('fj').value.trim(), deskripsi=$('fdesc').value.trim(), tanggal=$('ftgl').value;
+  if(!judul){toast('Judul tidak boleh kosong.','err');return;}
+  if(!deskripsi){toast('Isi berita tidak boleh kosong.','err');return;}
+  if(!tanggal){toast('Pilih tanggal terbit.','err');return;}
+  const data={judul,deskripsi,tanggal,kategori:$('fk').value,gambar:$('fimg').value.trim(),
+    penulis:S.user.nama,penulisId:S.user.id};
+  const eid=$('eid').value;
+  const btn=$('btn-sub'); btn.disabled=true; btn.textContent='Menyimpan...';
+  const r=eid?await api('editNews',{id:eid,news:data}):await api('addNews',{news:data});
+  btn.disabled=false; btn.textContent=eid?'💾 Simpan':'📤 Publikasikan';
+  if(r.ok){
+    toast(eid?'Berita diperbarui! ✅':'Berita dipublikasikan! 🎉','ok');
+    closeModal('write-modal'); await loadNews();
+  } else toast(r.error||'Gagal menyimpan.','err');
+}
+
+/* ══════════════════════════════
+   MANAGE
+══════════════════════════════ */
+function openManage() {
+  closeMenu();
+  const mine=S.all.filter(n=>n.penulisId===S.user?.id||S.user?.role==='admin');
+  $('manage-list').innerHTML=mine.length===0
+    ?`<div class="empty"><div class="ei">📋</div><h3>Belum ada berita</h3><p>Mulai tulis berita pertama Anda.</p></div>`
+    :`<p style="font-size:12px;color:var(--muted);margin-bottom:12px">${mine.length} berita</p>`+
+     mine.map(n=>`<div class="mi">
+       <div class="mi-bd"><div class="mi-ttl">${esc(n.judul)}</div>
+         <div class="mi-mt">${n.kategori||'—'} · ${fmtD(n.tanggal)}</div></div>
+       <div class="mi-ac">
+         <button class="bsm b-e" onclick="editFM('${n.id}')">Edit</button>
+         <button class="bsm b-d" onclick="confirmDel('${n.id}')">Hapus</button>
+       </div>
+     </div>`).join('');
+  openModal('manage-modal');
+}
+function editFM(id){closeModal('manage-modal');setTimeout(()=>openWriteModal(id),300);}
+
+let _did=null;
+function confirmDel(id){
+  _did=id;
+  $('btn-cdel').onclick=async()=>{
+    const r=await api('deleteNews',{id:_did});
+    if(r.ok){toast('Berita dihapus.','ok');closeModal('confirm-modal');await loadNews();openManage();}
+    else toast(r.error||'Gagal menghapus.','err');
+  };
+  openModal('confirm-modal');
+}
+
+/* ══════════════════════════════
+   MODALS
+══════════════════════════════ */
+function openModal(id){$(id).classList.add('on');document.body.style.overflow='hidden';}
+function closeModal(id){$(id).classList.remove('on');if(!document.querySelector('.ov.on'))document.body.style.overflow='';}
+document.querySelectorAll('.ov').forEach(m=>{m.addEventListener('click',e=>{if(e.target===m)closeModal(m.id);});});
+
+/* ══════════════════════════════
+   SEARCH + SCROLL
+══════════════════════════════ */
+let _st;
+$('srch').addEventListener('input',e=>{
+  clearTimeout(_st);_st=setTimeout(()=>{S.q=e.target.value.toLowerCase().trim();applyFilters();},280);
+});
+window.addEventListener('scroll',()=>{$('stb').classList.toggle('on',scrollY>400);},{passive:true});
+
+/* ══════════════════════════════
+   INIT
+══════════════════════════════ */
+async function init() {
+  const saved=loadSession();
+  if(saved){S.user=saved;updateUserUI();}
+  await loadNews();
+  setTimeout(()=>$('ls').classList.add('hide'),1300);
+}
+init();
+</script>
+</body>
+</html>
